@@ -1,7 +1,4 @@
-from django.template import Template,Context,loader
-from datetime import datetime
-from django.http import HttpResponse
-from django.template.loader import get_template
+import pathlib
 from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 import tensorflow as tf
@@ -19,26 +16,10 @@ class UploadFileForm(forms.Form):
 def index(request):
     return render(request,'index.html')
 
-
-def read_image(request):
-    complete=0
-    if request.method == 'POST':
-        form = UploadFileForm(request.POST, request.FILES)
-        complete=1
-        if form.is_valid():
-            image=request.FILES['NOMBRE_IMAGEN_EN_FORMULARIO']
-            complete=1
-            img_name, full_path=handle_uploaded_file(image)
-            return img_name, full_path, complete
-        else:
-            complete=form.errors
-    else:
-        form = UploadFileForm()
-    return None, None, complete
-
 def upload(request):
-
-    fileModel = "fashionmnist/static/Model/fashion_mnist"
+    
+    proyectPath = os.path.dirname(__file__)
+    fileModel = proyectPath+"/static/Model/fashion_mnist"
     new_model = tf.keras.models.load_model(fileModel)
 
     if request.method == 'POST' and request.FILES['imagen']:
@@ -47,24 +28,25 @@ def upload(request):
 
         file = fss.save(upload.name,upload)
 
+        
             
         img = Image.open(file)  #aqui introduccimos la ruta de la imagen
         imgGray = img.convert('L')
-        imgGray.save('fashionmnist/static/img/imagen_b_n.png')
+        imgGray.save(proyectPath+'/static/img/imagen_b_n.png')
 
             #invertir los colores de la imagen
-        image = Image.open('fashionmnist/static/img/imagen_b_n.png')
+        image = Image.open(proyectPath+'/static/img/imagen_b_n.png')
         inverted_image = PIL.ImageOps.invert(image)
-        inverted_image.save('fashionmnist/static/img/imagen_b_n_i.png')
-        os.remove('fashionmnist/static/img/imagen_b_n.png')
+        inverted_image.save(proyectPath+'/static/img/imagen_b_n_i.png')
+        os.remove(proyectPath+'/static/img/imagen_b_n.png')
 
             #cambiamos la resolucion de la imagen a 28*28
-        img = Image.open('fashionmnist/static/img/imagen_b_n_i.png')
+        img = Image.open(proyectPath+'/static/img/imagen_b_n_i.png')
         new_img = img.resize((28,28))
-        new_img.save('fashionmnist/static/img/imagen_b_n_i_r.png','png')
-        os.remove('fashionmnist/static/img/imagen_b_n_i.png')
+        new_img.save(proyectPath+'/static/img/imagen_b_n_i_r.png','png')
+        os.remove(proyectPath+'/static/img/imagen_b_n_i.png')
 
-        img = Image.open("fashionmnist/static/img/imagen_b_n_i_r.png")
+        img = Image.open(proyectPath+"/static/img/imagen_b_n_i_r.png")
         img.load()
         img = (np.expand_dims(img,0))
         predictions_single = new_model.predict(img/255)
@@ -94,6 +76,7 @@ def upload(request):
         else:
             mensaje='No se encontró ninguna coincidencia'
 
+    
     os.remove(upload.name)
-    os.remove("fashionmnist/static/img/imagen_b_n_i_r.png")
+    os.remove(proyectPath+"/static/img/imagen_b_n_i_r.png")
     return render(request,'prediction.html',{'mensaje':mensaje})
